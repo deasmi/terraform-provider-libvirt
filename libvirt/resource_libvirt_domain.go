@@ -798,6 +798,8 @@ func resourceLibvirtDomainRead(d *schema.ResourceData, meta interface{}) error {
 	d.Set("nvram", domainDef.OS.NVRam)
 	d.Set("cpu", domainDef.CPU)
 	d.Set("autostart", autostart)
+	d.Set("machine",domainDef.OS.Type.Machine)
+	d.Set("arch",domainDef.OS.Type.Arch)
 
 	running, err := isDomainRunning(*domain)
 	if err != nil {
