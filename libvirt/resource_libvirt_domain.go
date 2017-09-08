@@ -148,11 +148,11 @@ func resourceLibvirtDomain() *schema.Resource {
 				Required: false,
 			},
 			"machine": &schema.Schema{
-			        Type: schema.TypeString,
+				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"arch": &schema.Schema{
-			        Type: schema.TypeString,
+				Type:     schema.TypeString,
 				Optional: true,
 			},
 			"boot_device": &schema.Schema{
@@ -250,11 +250,16 @@ func resourceLibvirtDomainCreate(d *schema.ResourceData, meta interface{}) error
 				domainDef.Devices.Graphics[0].AutoPort = autoport.(string)
 			}
 			if listen_type, ok := graphics_map["listen_type"]; ok {
+				listen_address, _ := graphics_map["listen_address"]
 				domainDef.Devices.Graphics[0].Listeners = []libvirtxml.DomainGraphicListener{
 					libvirtxml.DomainGraphicListener{
-						Type: listen_type.(string),
+						Type:    listen_type.(string),
+						Address: listen_address.(string),
 					},
 				}
+			}
+			if len(domainDef.Devices.Graphics[0].Listeners) > 0 && graphics_map["listen_address"] != nil {
+				domainDef.Devices.Graphics[0].Listeners[0].Address = graphics_map["listen_address"].(string)
 			}
 		}
 	}
@@ -270,7 +275,7 @@ func resourceLibvirtDomainCreate(d *schema.ResourceData, meta interface{}) error
 
 	domainDef.OS.Type.Arch = d.Get("arch").(string)
 	domainDef.OS.Type.Machine = d.Get("machine").(string)
-	
+
 	if firmware, ok := d.GetOk("firmware"); ok {
 		firmwareFile := firmware.(string)
 		if _, err := os.Stat(firmwareFile); os.IsNotExist(err) {
