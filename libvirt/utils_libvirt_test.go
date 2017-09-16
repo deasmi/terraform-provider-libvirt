@@ -3,6 +3,7 @@ package libvirt
 import (
 	"encoding/xml"
 	"testing"
+	"time"
 
 	libvirt "github.com/libvirt/libvirt-go"
 	"github.com/libvirt/libvirt-go-xml"
@@ -111,4 +112,23 @@ func TestGetOriginalMachineName(t *testing.T) {
 	}
 
 	t.Logf("Reverse canonical lookup for %s is %s which matches %s", canonname, reversename, machine)
+}
+
+func TestGetHostCapabilties(t *testing.T) {
+	start := time.Now()
+	conn := connect(t)
+	defer conn.Close()
+	caps,err := getHostCapabilities(conn)
+	if err != nil {
+		t.Errorf("Can't get host capabilties")
+	}
+	if caps.Host.UUID == "" {
+		t.Errorf("Host has no UUID!")
+	}
+
+
+
+	elapsed := time.Since(start)
+	t.Logf("[DEBUG] Get host capabilites took %s", elapsed)
+	
 }
