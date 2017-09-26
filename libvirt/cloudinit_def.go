@@ -11,7 +11,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
+	"runtime"
+	
 	"github.com/hooklift/iso9660"
 	"github.com/imdario/mergo"
 	libvirt "github.com/libvirt/libvirt-go"
@@ -145,19 +146,38 @@ func (ci *defCloudInit) createISO() (string, error) {
 		return "", err
 	}
 
-	isoDestination := filepath.Join(tmpDir, ci.Name)
-	cmd := exec.Command(
-		"genisoimage",
-		"-output",
-		isoDestination,
-		"-volid",
-		"cidata",
-		"-joliet",
-		"-rock",
-		filepath.Join(tmpDir, USERDATA),
-		filepath.Join(tmpDir, METADATA))
+	isoDir, err  := ioutil.TempDir("", "cloudinitiso")
+	if err != nil {
+		return "",err
+	}
+	isoDestination := filepath.Join(isoDir, ci.Name)
+	var cmd *exec.Cmd
+	switch os := runtime.GOOS; os {
+	case "linux":
+		cmd = exec.Command(
+			"genisoimage",
+			"-output",
+			isoDestination,
+			"-volid",
+			"cidata",
+			"-joliet",
+			"-rock",
+			filepath.Join(tmpDir, USERDATA),
+			filepath.Join(tmpDir, METADATA))
+	case "darwin":
+		cmd = exec.Command(
+			"hdiutil",
+			"makehybrid",
+			"-iso",
+			"-joliet",
+			"-o",
+			isoDestination,
+			tmpDir)
+	default:
+		return "",fmt.Errorf("[WARN] We cannot build iso for cloudinit on %s (yet)",os)
+	}
 
-	log.Print("About to execute cmd: %+v", cmd)
+	log.Printf("[INFO] About to execute cmd: %+v", cmd)
 	if err = cmd.Run(); err != nil {
 		return "", fmt.Errorf("Error while starting the creation of CloudInit's ISO image: %s", err)
 	}
